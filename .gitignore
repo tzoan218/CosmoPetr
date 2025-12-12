@@ -1,3 +1,22 @@
 # Ignore spare folder
 spare/
 
+# Ignore all markdown documentation files
+*.md
+
+# Maven build output (JAR files, compiled classes, etc.)
+# These are generated files - don't commit them!
+backend/target/
+*.jar
+*.class
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+
+# OS files
+.DS_Store
+Thumbs.db
