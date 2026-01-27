@@ -397,6 +397,63 @@ public class FortranExecutionService {
     }
     
     /**
+     * Write metric matrix to metric.inc file
+     * Format depends on number of fields:
+     * - For 1 field: metric_matrix(1,1) = value
+     * - For n fields: metric_matrix(i,j) = value for each i,j
+     * 
+     * @param fortranDir The directory containing the Fortran files
+     * @param conditions The initial conditions containing metric matrix
+     * @throws IOException If file writing fails
+     */
+    private void writeMetricInc(Path fortranDir, InitialConditionsDTO conditions) throws IOException {
+        Path metricIncFile = fortranDir.resolve("metric.inc");
+        logger.info("Writing metric to: {}", metricIncFile);
+        
+        try (BufferedWriter writer = Files.newBufferedWriter(metricIncFile)) {
+            List<List<Double>> metric = conditions.getMetric();
+            int numFields = conditions.getFieldValues() != null ? 
+                conditions.getFieldValues().size() : 1;
+            
+            if (metric == null || metric.isEmpty()) {
+                logger.warn("No metric provided, using default identity matrix");
+                // Default: identity matrix
+                for (int i = 0; i < numFields; i++) {
+                    for (int j = 0; j < numFields; j++) {
+                        double value = (i == j) ? 1.0 : 0.0;
+                        writer.write("      metric_matrix(" + (i + 1) + "," + (j + 1) + ")=" + 
+                            String.format("%.15f", value) + "d0");
+                        writer.newLine();
+                    }
+                }
+            } else {
+                // Write metric matrix from user input
+                // Ensure matrix is at least numFields × numFields
+                int metricSize = metric.size();
+                for (int i = 0; i < numFields; i++) {
+                    for (int j = 0; j < numFields; j++) {
+                        double value;
+                        if (i < metricSize && metric.get(i) != null && 
+                            j < metric.get(i).size() && metric.get(i).get(j) != null) {
+                            value = metric.get(i).get(j);
+                        } else {
+                            // Default: identity matrix for missing values
+                            value = (i == j) ? 1.0 : 0.0;
+                        }
+                        writer.write("      metric_matrix(" + (i + 1) + "," + (j + 1) + ")=" + 
+                            String.format("%.15f", value) + "d0");
+                        writer.newLine();
+                    }
+                }
+            }
+            
+            writer.newLine(); // Add blank line at end
+        }
+        
+        logger.info("✅Successfully wrote metric.inc");
+    }
+    
+    /**
      * Prepare multifix.f with correct number of fields (nf)
      * Modifies the source code to set nf parameter based on number of fields
      * 
@@ -579,10 +636,28 @@ public class FortranExecutionService {
      * 7. Return results
      * 
      * @param initialConditions Initial conditions from frontend
+     * @param providedExecutionId Optional execution ID (if null, will generate one)
+     * @return Execution result containing output files and status
+     */
+    /**
+     * Execute Fortran program with given initial conditions (overload without execution ID)
+     * 
+     * @param initialConditions Initial conditions from frontend
      * @return Execution result containing output files and status
      */
     public FortranExecutionResult executeFortran(InitialConditionsDTO initialConditions) {
-        String executionId = UUID.randomUUID().toString();
+        return executeFortran(initialConditions, null);
+    }
+    
+    /**
+     * Execute Fortran program with given initial conditions and execution ID
+     * 
+     * @param initialConditions Initial conditions from frontend
+     * @param providedExecutionId Optional execution ID (if null, will generate one)
+     * @return Execution result containing output files and status
+     */
+    public FortranExecutionResult executeFortran(InitialConditionsDTO initialConditions, String providedExecutionId) {
+        String executionId = providedExecutionId != null ? providedExecutionId : UUID.randomUUID().toString();
         long executionStartTime = System.currentTimeMillis();
         
         logger.info("========================================");
@@ -630,6 +705,9 @@ public class FortranExecutionService {
             
             // Step 4: Write initial_conditions.inc file
             writeInitialConditionsInc(fortranDir, initialConditions);
+            
+            // Step 4.5: Write metric.inc file
+            writeMetricInc(fortranDir, initialConditions);
             
             // Step 5: Determine number of fields from initial conditions
             int numFields = initialConditions.getFieldValues() != null ? 

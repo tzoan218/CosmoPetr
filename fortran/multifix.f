@@ -16,6 +16,7 @@
       integer, parameter :: nf=1!, nf2=4
 !      real(8) ll(nf,nf),G(nf,nf,nf),x(nf),xd(nf)
       real*8 parameters(20)!,ccc!,b2!phi3,phi2!
+      real*8 metric_matrix(nf,nf)!,ccc!,b2!phi3,phi2!
       end module global
       
       
@@ -148,6 +149,16 @@
       write(*,*) 'Set the initial values for x(1), x(2), etc.'
       write(*,*) 'Example: x(1) = 6.33'
       write(*,*) '========================================'
+      write(*,*) 'METRIC'
+      write(*,*) '========================================'
+      write(*,*) 'Metric matrix from metric.inc'
+      write(*,*) 'Edit file before compiling'
+      write(*,*) 'Set metric_matrix(i,j) for each i,j'
+      write(*,*) 'Example: metric_matrix(1,1) = 1.0d0'
+      write(*,*) '========================================'
+      
+!     Initialize metric matrix from metric.inc
+      include 'metric.inc'
       
 !      do iii=1,10000
 !       yy=( 0.1d0+(iii-100)*0.1d0)
@@ -1695,18 +1706,10 @@ c      enddo
       use global
       implicit none
       integer i,j
-      real*8 x(nf),lll,a
+      real*8 x(nf),lll
 !      lll=x(i)**2.d0*x(j)**3.d0
-      a=1.d0
-      if (i.eq.j) then
-         ! if (i.eq.1) then
-      lll=a
-         ! else if (i.eq.2) then
-             ! lll=dexp(16.d0*x(1))
-             ! endif
-      else
-      lll=0.d0
-      endif
+!     Use metric matrix from metric.inc
+      lll=metric_matrix(i,j)
 
       return
       end

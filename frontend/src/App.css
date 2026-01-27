@@ -328,3 +328,13 @@ textarea:focus {
     grid-template-columns: 1fr;
   }
 }
+
+/* Calculating status animation */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}

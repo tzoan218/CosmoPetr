@@ -1502,85 +1502,123 @@ function App() {
               </div>
             )}
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '20px', gap: '10px' }}>
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <button 
-                  className="primary-button" 
-                  onClick={() => setActivePage("initial")}
-                  disabled={isCalculating}
-                  style={{ 
-                    backgroundColor: 'transparent',
-                    color: '#00ffc3',
-                    fontWeight: 'bold',
-                    padding: '12px 24px',
-                    fontSize: '16px',
-                    border: '1px solid rgba(0, 191, 166, 0.5)',
-                    cursor: isCalculating ? 'not-allowed' : 'pointer',
-                    borderRadius: '8px',
-                    transition: 'all 0.2s ease',
-                    opacity: isCalculating ? 0.5 : 1
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isCalculating) {
-                      e.target.style.backgroundColor = 'rgba(0, 191, 166, 0.1)';
-                      e.target.style.borderColor = '#00ffc3';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isCalculating) {
-                      e.target.style.backgroundColor = 'transparent';
-                      e.target.style.borderColor = 'rgba(0, 191, 166, 0.5)';
-                    }
-                  }}
-                >
-                  ← Back
-                </button>
-              </div>
-              <div style={{ display: 'flex', gap: '10px' }}>
-                {isCalculating && (
+            <div style={{ display: 'flex', flexDirection: 'column', marginTop: '20px', gap: '15px' }}>
+              {/* Buttons row */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px' }}>
+                <div style={{ display: 'flex', gap: '10px' }}>
                   <button 
                     className="primary-button" 
-                    onClick={handleCancelCalculation}
-                    style={{
+                    onClick={() => setActivePage("initial")}
+                    disabled={isCalculating}
+                    style={{ 
                       backgroundColor: 'transparent',
-                      color: '#ff4444',
+                      color: '#00ffc3',
                       fontWeight: 'bold',
                       padding: '12px 24px',
                       fontSize: '16px',
-                      border: '1px solid #ff4444',
-                      cursor: 'pointer',
+                      border: '1px solid rgba(0, 191, 166, 0.5)',
+                      cursor: isCalculating ? 'not-allowed' : 'pointer',
                       borderRadius: '8px',
-                      transition: 'all 0.2s ease'
+                      transition: 'all 0.2s ease',
+                      opacity: isCalculating ? 0.5 : 1
                     }}
                     onMouseEnter={(e) => {
-                      e.target.style.backgroundColor = 'rgba(255, 68, 68, 0.1)';
-                      e.target.style.borderColor = '#ff3333';
-                      e.target.style.color = '#ff3333';
-                      e.target.style.transform = 'translateY(-1px)';
+                      if (!isCalculating) {
+                        e.target.style.backgroundColor = 'rgba(0, 191, 166, 0.1)';
+                        e.target.style.borderColor = '#00ffc3';
+                      }
                     }}
                     onMouseLeave={(e) => {
-                      e.target.style.backgroundColor = 'transparent';
-                      e.target.style.borderColor = '#ff4444';
-                      e.target.style.color = '#ff4444';
-                      e.target.style.transform = 'translateY(0)';
+                      if (!isCalculating) {
+                        e.target.style.backgroundColor = 'transparent';
+                        e.target.style.borderColor = 'rgba(0, 191, 166, 0.5)';
+                      }
                     }}
                   >
-                    Cancel Calculation
+                    ← Back
                   </button>
-                )}
-                <button 
-                  className="primary-button" 
-                  onClick={handleRunCalculation}
-                  disabled={isCalculating}
-                  style={{
-                    backgroundColor: isCalculating ? '#ccc' : '#4CAF50',
-                    cursor: isCalculating ? 'not-allowed' : 'pointer',
-                    borderRadius: '8px'
-                  }}
-                >
-                  {isCalculating ? 'Calculating...' : 'Run Calculation'}
-                </button>
+                </div>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  {isCalculating && (
+                    <button 
+                      className="primary-button" 
+                      onClick={handleCancelCalculation}
+                      style={{
+                        backgroundColor: 'transparent',
+                        color: '#ff4444',
+                        fontWeight: 'bold',
+                        padding: '12px 24px',
+                        fontSize: '16px',
+                        border: '1px solid #ff4444',
+                        cursor: 'pointer',
+                        borderRadius: '8px',
+                        transition: 'all 0.2s ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.target.style.backgroundColor = 'rgba(255, 68, 68, 0.1)';
+                        e.target.style.borderColor = '#ff3333';
+                        e.target.style.color = '#ff3333';
+                        e.target.style.transform = 'translateY(-1px)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.target.style.backgroundColor = 'transparent';
+                        e.target.style.borderColor = '#ff4444';
+                        e.target.style.color = '#ff4444';
+                        e.target.style.transform = 'translateY(0)';
+                      }}
+                    >
+                      Cancel Calculation
+                    </button>
+                  )}
+                  {!isCalculating && (
+                    <button 
+                      className="primary-button" 
+                      onClick={handleRunCalculation}
+                      style={{
+                        backgroundColor: '#4CAF50',
+                        cursor: 'pointer',
+                        borderRadius: '8px',
+                        color: '#fff',
+                        fontWeight: 'bold',
+                        padding: '12px 24px',
+                        fontSize: '16px',
+                        border: 'none',
+                        transition: 'all 0.2s ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.target.style.backgroundColor = '#45a049';
+                        e.target.style.transform = 'translateY(-1px)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.target.style.backgroundColor = '#4CAF50';
+                        e.target.style.transform = 'translateY(0)';
+                      }}
+                    >
+                      Run Calculation
+                    </button>
+                  )}
+                </div>
               </div>
+              
+              {/* Calculating status indicator (not a button) */}
+              {isCalculating && (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '12px 24px',
+                  color: '#00ffc3',
+                  fontSize: '16px',
+                  fontWeight: '500',
+                  fontStyle: 'italic'
+                }}>
+                  <span style={{ 
+                    marginRight: '8px',
+                    animation: 'pulse 1.5s ease-in-out infinite'
+                  }}>⏳</span>
+                  Calculating...
+                </div>
+              )}
             </div>
             
             {/* Display calculation results */}
