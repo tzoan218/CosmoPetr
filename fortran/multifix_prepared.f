@@ -13,7 +13,7 @@
 !*******************************************************************************
       module global
       implicit none
-      integer, parameter :: nf=1!, nf2=4
+      integer, parameter :: nf=2!, nf2=4
 !      real(8) ll(nf,nf),G(nf,nf,nf),x(nf),xd(nf)
       real*8 parameters(20)!,ccc!,b2!phi3,phi2!
       real*8 metric_matrix(nf,nf)!,ccc!,b2!phi3,phi2!
@@ -61,7 +61,7 @@
       real*8 prk_min(timestep), ks_norm_min,norma_p,norma_m
       parameter(t0=0,dt=0.05D0,kstar=0.05d0,
      +dpr=0.001,cq=100.d0,dc=0.45d0
-     +,k_step=2,epsi=1.d-5)
+     +,k_step=2,epsi=1.d-7)
       !real*8 pot(200),yy
       real*8 pi,opbh_ps,mpeak_ps,ppeak
       real*8 opbh_pt,mpeak_pt,ppeak_pt
@@ -1708,8 +1708,10 @@ c      enddo
       integer i,j
       real*8 x(nf),lll
 !      lll=x(i)**2.d0*x(j)**3.d0
-!     Use metric matrix from metric.inc
+!     Default to metric_matrix(i,j) from metric.inc, but allow overriding
+!     with coordinate-dependent expressions from metric_function.inc.
       lll=metric_matrix(i,j)
+      include 'metric_function.inc'
 
       return
       end

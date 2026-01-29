@@ -39,10 +39,11 @@ public class InitialConditionsDTO {
     //Potential expression
     private String potentialExpression;
 
-    //Metric matrix: List of Lists representing n×n metric matrix
-    //For 1 field: [[value]] (single value)
-    //For n fields: n×n matrix
-    private List<List<Double>> metric;
+    // Metric matrix as expressions: List of Lists representing n×n metric matrix
+    // Each entry is either a number (e.g., "1", "0.5") or a function of fields (e.g., "x(1)**2")
+    // For 1 field: [["1"]] (single value)
+    // For n fields: n×n matrix
+    private List<List<String>> metric;
 
     //Constructors
     public InitialConditionsDTO(){
@@ -137,11 +138,11 @@ public class InitialConditionsDTO {
         this.parameterValues = parameterValues;
     }
 
-    public List<List<Double>> getMetric() {
+    public List<List<String>> getMetric() {
         return metric;
     }
 
-    public void setMetric(List<List<Double>> metric) {
+    public void setMetric(List<List<String>> metric) {
         this.metric = metric;
     }
 }

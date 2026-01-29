@@ -28,8 +28,9 @@ function App() {
   const [numParametersInput, setNumParametersInput] = useState("0");
   // Array of parameter objects: [{name: "m", value: "1.0"}, ...]
   const [parameters, setParameters] = useState([]);
-  // Metric matrix: 2D array for n×n metric (for 1 field, it's just [[value]])
-  const [metric, setMetric] = useState([[1.0]]);
+  // Metric matrix: 2D array (strings) for n×n metric expressions.
+  // Examples: "1", "0", "x(1)**2"
+  const [metric, setMetric] = useState([["1.0"]]);
 
   // ----------------------------------------------------
   //  update number of fields AND keep arrays in sync
@@ -95,7 +96,7 @@ function App() {
             row.push(previousMetric[i][j]);
           } else {
             // Default: identity matrix (1 on diagonal, 0 off-diagonal)
-            row.push(i === j ? 1.0 : 0.0);
+            row.push(i === j ? "1.0" : "0.0");
           }
         }
         newMetric.push(row);
@@ -187,9 +188,9 @@ function App() {
   function handleMetricChange(i, j, event) {
     const newValue = event.target.value;
     const copy = metric.map(row => [...row]);
-    // Parse the value, default to 0 if invalid
-    const numValue = parseFloat(newValue);
-    copy[i][j] = isNaN(numValue) ? 0.0 : numValue;
+    // Keep metric entries as raw expressions (strings).
+    // Backend/Fortran will interpret these expressions.
+    copy[i][j] = newValue;
     setMetric(copy);
   }
 
@@ -1199,9 +1200,8 @@ function App() {
                         {Array.from({ length: numFields }).map((_, j) => (
                           <td key={j} style={{ padding: "4px" }}>
                             <input
-                              type="number"
-                              step="any"
-                              value={metric[i] && metric[i][j] !== undefined ? metric[i][j] : (i === j ? 1.0 : 0.0)}
+                              type="text"
+                              value={metric[i] && metric[i][j] !== undefined ? metric[i][j] : (i === j ? "1.0" : "0.0")}
                               onChange={(event) => handleMetricChange(i, j, event)}
                               style={{
                                 width: "100%",
@@ -1213,7 +1213,7 @@ function App() {
                                 fontSize: "14px",
                                 textAlign: "center"
                               }}
-                              placeholder={i === j ? "1.0" : "0.0"}
+                              placeholder={i === j ? "1.0  (or x(1)**2)" : "0.0"}
                             />
                           </td>
                         ))}

@@ -411,7 +411,7 @@ public class FortranExecutionService {
         logger.info("Writing metric to: {}", metricIncFile);
         
         try (BufferedWriter writer = Files.newBufferedWriter(metricIncFile)) {
-            List<List<Double>> metric = conditions.getMetric();
+            List<List<String>> metric = conditions.getMetric();
             int numFields = conditions.getFieldValues() != null ? 
                 conditions.getFieldValues().size() : 1;
             
@@ -427,18 +427,19 @@ public class FortranExecutionService {
                     }
                 }
             } else {
-                // Write metric matrix from user input
-                // Ensure matrix is at least numFields × numFields
+                // Write metric_matrix(i,j) only for constant numeric entries.
+                // For functional entries, metric_matrix keeps a safe default (identity).
                 int metricSize = metric.size();
                 for (int i = 0; i < numFields; i++) {
                     for (int j = 0; j < numFields; j++) {
                         double value;
-                        if (i < metricSize && metric.get(i) != null && 
-                            j < metric.get(i).size() && metric.get(i).get(j) != null) {
-                            value = metric.get(i).get(j);
-                        } else {
-                            // Default: identity matrix for missing values
-                            value = (i == j) ? 1.0 : 0.0;
+                        value = (i == j) ? 1.0 : 0.0; // default identity
+                        if (i < metricSize && metric.get(i) != null && j < metric.get(i).size()) {
+                            String expr = metric.get(i).get(j);
+                            Double parsed = tryParseDouble(expr);
+                            if (parsed != null) {
+                                value = parsed;
+                            }
                         }
                         writer.write("      metric_matrix(" + (i + 1) + "," + (j + 1) + ")=" + 
                             String.format("%.15f", value) + "d0");
@@ -451,6 +452,140 @@ public class FortranExecutionService {
         }
         
         logger.info("✅Successfully wrote metric.inc");
+    }
+
+    /**
+     * Write metric_function.inc used inside the Fortran function lll(i,j,x).
+     * Each entry can be a constant or an expression depending on x(1..nf).
+     */
+    private void writeMetricFunctionInc(Path fortranDir, InitialConditionsDTO conditions) throws IOException {
+        Path metricFuncIncFile = fortranDir.resolve("metric_function.inc");
+        logger.info("Writing metric function to: {}", metricFuncIncFile);
+
+        List<List<String>> metric = conditions.getMetric();
+        int numFields = conditions.getFieldValues() != null ?
+            conditions.getFieldValues().size() : 1;
+
+        try (BufferedWriter writer = Files.newBufferedWriter(metricFuncIncFile)) {
+            // If no metric provided, keep defaults (lll already set to metric_matrix(i,j))
+            if (metric == null || metric.isEmpty()) {
+                writer.write("      ! No functional metric provided; using metric_matrix(i,j)");
+                writer.newLine();
+                writer.newLine();
+                logger.info("✅Successfully wrote metric_function.inc (default only)");
+                return;
+            }
+
+            // Build nested ifs: if(i==1) then if(j==1) then lll=... endif ... endif
+            for (int i = 0; i < numFields; i++) {
+                if (i == 0) {
+                    writer.write("      if (i.eq." + (i + 1) + ") then");
+                } else {
+                    writer.write("      else if (i.eq." + (i + 1) + ") then");
+                }
+                writer.newLine();
+
+                // Determine row size safely
+                List<String> row = (i < metric.size()) ? metric.get(i) : null;
+
+                boolean wroteAnyJ = false;
+                for (int j = 0; j < numFields; j++) {
+                    String expr = null;
+                    if (row != null && j < row.size()) {
+                        expr = row.get(j);
+                    }
+
+                    // Missing/blank => skip (will keep default lll=metric_matrix(i,j))
+                    if (expr == null || expr.trim().isEmpty()) {
+                        continue;
+                    }
+
+                    String fortranExpr;
+                    Double parsed = tryParseDouble(expr);
+                    if (parsed != null) {
+                        fortranExpr = String.format("%.15f", parsed) + "d0";
+                    } else {
+                        fortranExpr = transformMetricExpressionToFortran(expr);
+                    }
+
+                    if (!wroteAnyJ) {
+                        writer.write("       if (j.eq." + (j + 1) + ") then");
+                        wroteAnyJ = true;
+                    } else {
+                        writer.write("       else if (j.eq." + (j + 1) + ") then");
+                    }
+                    writer.newLine();
+                    writer.write("        lll=" + fortranExpr);
+                    writer.newLine();
+                }
+
+                if (wroteAnyJ) {
+                    writer.write("       endif");
+                    writer.newLine();
+                }
+            }
+
+            writer.write("      endif");
+            writer.newLine();
+            writer.newLine();
+        }
+
+        logger.info("✅Successfully wrote metric_function.inc");
+    }
+
+    private static Double tryParseDouble(String value) {
+        if (value == null) return null;
+        String s = value.trim();
+        if (s.isEmpty()) return null;
+        // Accept Fortran-style d/D exponent by converting to E for Java parsing.
+        s = s.replace('D', 'E').replace('d', 'E');
+        try {
+            return Double.parseDouble(s);
+        } catch (NumberFormatException ignored) {
+            return null;
+        }
+    }
+
+    /**
+     * Add d0 to numeric literals while preserving x(1), x(2), ... indices.
+     * This mirrors the potential transformation but without adding a VV= prefix.
+     */
+    private String transformMetricExpressionToFortran(String expression) {
+        String expr = expression == null ? "" : expression.trim();
+        if (expr.isEmpty()) return "0.d0";
+
+        // Protect array indices like x(1)
+        Pattern arrayIndexPattern = Pattern.compile("x\\((\\d+)\\)");
+        List<String> arrayIndices = new ArrayList<>();
+        StringBuffer protectedBuffer = new StringBuffer();
+        Matcher arrayMatcher = arrayIndexPattern.matcher(expr);
+        int index = 0;
+        while (arrayMatcher.find()) {
+            arrayIndices.add(arrayMatcher.group(0));
+            arrayMatcher.appendReplacement(protectedBuffer, "___ARRAY_INDEX_" + index + "___");
+            index++;
+        }
+        arrayMatcher.appendTail(protectedBuffer);
+        String transformed = protectedBuffer.toString();
+
+        // Add d0 suffix to numeric literals not already in d0 form
+        Pattern numberPattern = Pattern.compile("(?<![a-zA-Z_])(-?\\d+\\.?\\d*)(?![a-zA-Z_0-9])");
+        Matcher matcher = numberPattern.matcher(transformed);
+        StringBuffer sb = new StringBuffer();
+        while (matcher.find()) {
+            String number = matcher.group(1);
+            String replacement = number.contains(".") ? (number + "d0") : (number + ".d0");
+            matcher.appendReplacement(sb, Matcher.quoteReplacement(replacement));
+        }
+        matcher.appendTail(sb);
+        transformed = sb.toString();
+
+        // Restore array indices
+        for (int i = 0; i < arrayIndices.size(); i++) {
+            transformed = transformed.replace("___ARRAY_INDEX_" + i + "___", arrayIndices.get(i));
+        }
+
+        return transformed.trim();
     }
     
     /**
@@ -708,6 +843,8 @@ public class FortranExecutionService {
             
             // Step 4.5: Write metric.inc file
             writeMetricInc(fortranDir, initialConditions);
+            // Step 4.6: Write metric_function.inc file (used inside lll(i,j,x))
+            writeMetricFunctionInc(fortranDir, initialConditions);
             
             // Step 5: Determine number of fields from initial conditions
             int numFields = initialConditions.getFieldValues() != null ? 

@@ -60,7 +60,7 @@
       real*8 prk_plus(timestep), ks_norm_plus
       real*8 prk_min(timestep), ks_norm_min,norma_p,norma_m
       parameter(t0=0,dt=0.05D0,kstar=0.05d0,
-     +dpr=0.001,cq=100.d0,dc=0.45d0
+     +dpr=0.0001,cq=100.d0,dc=0.45d0
      +,k_step=2,epsi=1.d-5)
       !real*8 pot(200),yy
       real*8 pi,opbh_ps,mpeak_ps,ppeak
@@ -1708,8 +1708,10 @@ c      enddo
       integer i,j
       real*8 x(nf),lll
 !      lll=x(i)**2.d0*x(j)**3.d0
-!     Use metric matrix from metric.inc
+!     Default to metric_matrix(i,j) from metric.inc, but allow overriding
+!     with coordinate-dependent expressions from metric_function.inc.
       lll=metric_matrix(i,j)
+      include 'metric_function.inc'
 
       return
       end
