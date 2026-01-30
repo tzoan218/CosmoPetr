@@ -13,7 +13,7 @@
 !*******************************************************************************
       module global
       implicit none
-      integer, parameter :: nf=2!, nf2=4
+      integer, parameter :: nf=1!, nf2=4
 !      real(8) ll(nf,nf),G(nf,nf,nf),x(nf),xd(nf)
       real*8 parameters(20)!,ccc!,b2!phi3,phi2!
       real*8 metric_matrix(nf,nf)!,ccc!,b2!phi3,phi2!
